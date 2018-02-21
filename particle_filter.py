@@ -16,8 +16,23 @@ def motion_update(particles, odom):
                 after motion update
     """
     motion_particles = []
-    print("particles are: ", particles[0:2])
-    print("odom is: ", odom)
+
+    # If the robot hasn't moved just return particles
+    if sum(odom) == 0:
+        return particles
+
+    for particle in particles:
+        # update particle distance, angle, header according to odom measurements
+        noisy_odom = add_odometry_noise(odom, ODOM_HEAD_SIGMA, ODOM_TRANS_SIGMA)
+        x_dist_adj = particle.x + odom[0] + noisy_odom[0]
+        y_dist_adj = particle.y + odom[1] + noisy_odom[1]
+        new_h = particle.h + diff_heading_deg(particle.h, odom[2])
+
+        new_x, new_y = rotate_point(x_dist_adj, y_dist_adj, new_h)
+        new_particle = Particle(new_x, new_y, new_h)
+
+        motion_particles.append(new_particle)
+
     return motion_particles
 
 # ------------------------------------------------------------------------
