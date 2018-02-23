@@ -63,7 +63,7 @@ def measurement_update(particles, measured_marker_list, grid):
                 after measurement update
     """
 
-    # TODO: Reset particle distribution if all probabilities are too low
+    # TODO: Resample particle distribution if all probabilities are too low
     # TODO: Integrate random seed in sample method--- how to do this??? Where?
     # TODO: prevent sampling bias when no change -- but how to determine change in sensor info?
 
@@ -82,14 +82,17 @@ def measurement_update(particles, measured_marker_list, grid):
         particle_markers_list = particle.read_markers(grid)
         marker_pairs = get_marker_pairs(particle_markers_list, measured_marker_list)
         prob = 1.0
+        dist_diff = 0
+        angle_diff = 0
 
         # Update probability score for this particle
         for p_marker, r_marker in marker_pairs.items():
 
             # Compare to robot marker with greatest similarity/proximity
-            dist_diff = grid_distance(p_marker[0], p_marker[1], r_marker[0], r_marker[1])
-            angle_diff = diff_heading_deg(p_marker[2], r_marker[2])
-            prob *= np.exp(-1*(((dist_diff**2) / (2 * MARKER_TRANS_SIGMA **2)) + ((angle_diff**2) / (2 * MARKER_ROT_SIGMA**2))))
+            dist_diff += grid_distance(p_marker[0], p_marker[1], r_marker[0], r_marker[1])
+            angle_diff += diff_heading_deg(p_marker[2], r_marker[2])
+        
+        prob *= np.exp(-1*(((dist_diff**2) / (2 * MARKER_TRANS_SIGMA **2)) + ((angle_diff**2) / (2 * MARKER_ROT_SIGMA**2))))
         particle_accuracies.append(prob)
 
     # Probability list normalization step
