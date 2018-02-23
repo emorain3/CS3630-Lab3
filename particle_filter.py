@@ -100,7 +100,7 @@ def get_closest_marker(marker, objective_marker_list):
 
     closest_marker = objective_marker_list[0]
     shortest_dist = grid_distance(marker[0], marker[1], objective_marker_list[0][0], objective_marker_list[0][1])
-    for i in range(objective_marker_list.len()):
+    for i in range(len(objective_marker_list)):
         if(grid_distance(marker[0], marker[1], objective_marker_list[i][0], objective_marker_list[i][1]) < shortest_dist):
             closest_marker = objective_marker_list[i]
     return closest_marker
