@@ -2,6 +2,8 @@ from grid import *
 from particle import Particle
 from utils import *
 from setting import *
+import numpy as np
+from numpy.random import choice
 
 
 def motion_update(particles, odom):
@@ -60,7 +62,85 @@ def measurement_update(particles, measured_marker_list, grid):
         Returns: the list of particles represents belief p(x_{t} | u_{t})
                 after measurement update
     """
+
+    #update weight of each particle according to how closely the markeres
+    # it sees matches the markers that the robot sees
+    # What is meant by weights?
+
     measured_particles = []
+    particle_accuracies = []
+
+    # for each particle measure the markers and organize such that the particles markers are
+    #  a best fit comparison to the robot markers
+
+
+
+    # fill accuracy list with the measured accuracy of each particle
+    # Here accuracy of a particle is evaluated by measuring the difference in the markers the particle sees
+    #   versus the particles that the robot sees
+    for particle in particles:
+        particle_markers_list = particle.read_markers(grid)
+        prob = 1.0
+
+        # Update probability score for this particle
+        for marker in particle_markers_list:
+            # Compare to robot marker with greatest similarity/proximity
+            robot_marker = get_closest_marker(marker, measured_marker_list)
+            dist_diff = grid_distance(marker[0], marker[1], robot_marker[0],robot_marker[1])
+            angle_diff = diff_heading_deg(marker[2], robot_marker[2])
+            prob *= np.exp(-1*(((dist_diff**2) / (2 * MARKER_TRANS_SIGMA **2)) + ((angle_diff**2) / (2 * MARKER_ROT_SIGMA**2))))
+
+
+
     return measured_particles
 
 
+# This is very inelegant code, but it is all that I have in me right now.
+def get_closest_marker(marker, objective_marker_list):
+
+    closest_marker = objective_marker_list[0]
+    shortest_dist = grid_distance(marker[0], marker[1], objective_marker_list[0][0], objective_marker_list[0][1])
+    for i in range(objective_marker_list.len()):
+        if(grid_distance(marker[0], marker[1], objective_marker_list[i][0], objective_marker_list[i][1]) < shortest_dist):
+            closest_marker = objective_marker_list[i]
+    return closest_marker
+
+
+
+def resample_particles(particles, particle_prob_list, grid):
+
+    particle_indicies = np.array(range(0,len(particle_prob_list),1))
+
+    #Create the distribution
+    particle_prob_dist = [0.0]
+    i = 0
+    for prob in particle_prob_list:
+        particle_prob_dist.append(prob + particle_prob_dist[i])
+        i += 1
+
+    #Sample the indicies with replacement
+    resampled_indicies = choice(particle_indicies, len(particle_indicies), p=particle_prob_dist) #read the manual pages to see if the distribution is accepted
+    resampled_indicies = np.array(resampled_indicies)
+
+    #Check the probability distribution out of indicies pulled
+    a = particle_prob_list[resampled_indicies]
+
+    #Flag indicies that are below the threshold
+
+    #Pull the newly sample particles
+
+    #Replace the particles with flaged indicies with leagal random particles
+
+    # Eliminate particles of low probability and create a random sample from what arledy exists
+    threshold = 0.000001  # Tweak This
+    num_of_random_samples = len(particle_prob_list[particle_prob_list < threshold])
+
+    # Replace Low Prob. Particles With Random Particles
+    if num_of_random_samples > 0:
+        a = 1
+        # Replace particle prob list to after its sampled
+        # measured_particles[particle_prob_list < threshold] = np.array(
+        #     Particle.create_random(num_of_random_samples, grid=grid))
+
+    # Keep a small sample of particles random
+    # Check if each particle is in a legal positon if not set to zero
