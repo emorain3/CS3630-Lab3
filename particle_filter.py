@@ -63,41 +63,58 @@ def measurement_update(particles, measured_marker_list, grid):
                 after measurement update
     """
 
-    #update weight of each particle according to how closely the markeres
-    # it sees matches the markers that the robot sees
-    # What is meant by weights?
+    # TODO: Reset particle distribution if all probabilities are too low
+    # TODO: Integrate random seed in sample method--- how to do this??? Where?
+    # TODO: prevent sampling bias when no change -- but how to determine change in sensor info?
 
     measured_particles = []
     particle_accuracies = []
 
     # for each particle measure the markers and organize such that the particles markers are
     #  a best fit comparison to the robot markers
+    if len(measured_marker_list) == 0:
+        return particles
 
-
-
-    # fill accuracy list with the measured accuracy of each particle
+    # fill accuracy list with the measured accuracy/prob of each particle
     # Here accuracy of a particle is evaluated by measuring the difference in the markers the particle sees
     #   versus the particles that the robot sees
     for particle in particles:
         particle_markers_list = particle.read_markers(grid)
+        marker_pairs = get_marker_pairs(particle_markers_list, measured_marker_list)
         prob = 1.0
 
         # Update probability score for this particle
-        for marker in particle_markers_list:
+        for p_marker, r_marker in marker_pairs.items():
+
             # Compare to robot marker with greatest similarity/proximity
-            robot_marker = get_closest_marker(marker, measured_marker_list)
-            dist_diff = grid_distance(marker[0], marker[1], robot_marker[0],robot_marker[1])
-            angle_diff = diff_heading_deg(marker[2], robot_marker[2])
+            dist_diff = grid_distance(p_marker[0], p_marker[1], r_marker[0], r_marker[1])
+            angle_diff = diff_heading_deg(p_marker[2], r_marker[2])
             prob *= np.exp(-1*(((dist_diff**2) / (2 * MARKER_TRANS_SIGMA **2)) + ((angle_diff**2) / (2 * MARKER_ROT_SIGMA**2))))
+        particle_accuracies.append(prob)
 
-
+    # Probability list normalization step
+    sum = np.sum(particle_accuracies)
+    particle_accuracies = np.divide(particle_accuracies, sum)
+    measured_particles = choice(particles, len(particles), p=particle_accuracies)  # read the manual pages to see if the distribution is accepted
 
     return measured_particles
 
 
-# This is very inelegant code, but it is all that I have in me right now.
+
+
+def get_marker_pairs(particle_markers, robot_markers):
+
+    # returns a marker map in the for {observed particle marker: corresponding observed robot marker}
+    marker_dict = {}
+    for p_marker in particle_markers:
+        marker_dict[p_marker] = get_closest_marker(p_marker, robot_markers)
+    return marker_dict
+
+
+
 def get_closest_marker(marker, objective_marker_list):
 
+    #This is very inelegant code, but it is all that I have in me right now.
     closest_marker = objective_marker_list[0]
     shortest_dist = grid_distance(marker[0], marker[1], objective_marker_list[0][0], objective_marker_list[0][1])
     for i in range(len(objective_marker_list)):

@@ -17,8 +17,8 @@
       <file leaf-file-name="particle_filter.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/particle_filter.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="469">
-              <caret line="102" column="44" lean-forward="false" selection-start-line="102" selection-start-column="44" selection-end-line="102" selection-end-column="44" />
+            <state relative-caret-position="98">
+              <caret line="66" column="78" lean-forward="false" selection-start-line="66" selection-start-column="78" selection-end-line="66" selection-end-column="78" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -365,8 +365,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/particle_filter.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="469">
-          <caret line="102" column="44" lean-forward="false" selection-start-line="102" selection-start-column="44" selection-end-line="102" selection-end-column="44" />
+        <state relative-caret-position="98">
+          <caret line="66" column="78" lean-forward="false" selection-start-line="66" selection-start-column="78" selection-end-line="66" selection-end-column="78" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
