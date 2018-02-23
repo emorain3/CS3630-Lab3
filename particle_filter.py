@@ -3,6 +3,7 @@ from particle import Particle
 from utils import *
 from setting import *
 import numpy as np
+import heapq
 from numpy.random import choice
 
 
@@ -82,23 +83,35 @@ def measurement_update(particles, measured_marker_list, grid):
         particle_markers_list = particle.read_markers(grid)
         marker_pairs = get_marker_pairs(particle_markers_list, measured_marker_list)
         prob = 1.0
-        dist_diff = 0
+
         angle_diff = 0
 
         # Update probability score for this particle
-        for p_marker, r_marker in marker_pairs.items():
-
+        for marker_pair in marker_pairs:
+            dist = marker_pair[0]
+            particle_marker = marker_pair[1][0]
+            robot_marker = marker_pair[1][1]
             # Compare to robot marker with greatest similarity/proximity
-            dist_diff += grid_distance(p_marker[0], p_marker[1], r_marker[0], r_marker[1])
-            angle_diff += diff_heading_deg(p_marker[2], r_marker[2])
-        
-        prob *= np.exp(-1*(((dist_diff**2) / (2 * MARKER_TRANS_SIGMA **2)) + ((angle_diff**2) / (2 * MARKER_ROT_SIGMA**2))))
+            angle_diff += diff_heading_deg(particle_marker[2], robot_marker[2])
+
+            prob_match = np.exp(-1*(((dist**2) / (2 * MARKER_TRANS_SIGMA **2)) + ((angle_diff**2) / (2 * MARKER_ROT_SIGMA**2))))
+            prob_not_match = DETECTION_FAILURE_RATE * SPURIOUS_DETECTION_RATE
+        prob *= max(prob_match, prob_not_match)
+
+        # Account for "hallucinated" particles
+        if (len(particle_markers_list) < len(measured_marker_list)):
+            for x in range(len(measured_marker_list) - len(particle_markers_list)):
+                prob *= SPURIOUS_DETECTION_RATE
+        elif(len(particle_markers_list) > len(measured_marker_list)):
+            for x in range(len(particle_markers_list) - len(measured_marker_list)):
+                prob *= DETECTION_FAILURE_RATE
+
         particle_accuracies.append(prob)
 
     # Probability list normalization step
     sum = np.sum(particle_accuracies)
     particle_accuracies = np.divide(particle_accuracies, sum)
-    measured_particles = choice(particles, len(particles), p=particle_accuracies)  # read the manual pages to see if the distribution is accepted
+    measured_particles = choice(particles, len(particles), p=particle_accuracies)
 
     return measured_particles
 
@@ -107,11 +120,38 @@ def measurement_update(particles, measured_marker_list, grid):
 
 def get_marker_pairs(particle_markers, robot_markers):
 
-    # returns a marker map in the for {observed particle marker: corresponding observed robot marker}
-    marker_dict = {}
+    # returns a marker list in the form [(distance, (observed particle marker, corresponding observed robot marker))]
+    selected_pairs = set()
+    final_marker_list = []
+    marker_q = []
+    #Push all markers distances onto prioirity queue
     for p_marker in particle_markers:
-        marker_dict[p_marker] = get_closest_marker(p_marker, robot_markers)
-    return marker_dict
+        for r_marker in robot_markers:
+            dist = grid_distance(p_marker[0], p_marker[1], r_marker[0], r_marker[1])
+            heapq.heappush(marker_q, (dist, (p_marker, r_marker)))
+
+    # pop from prioirty queue while each of the particle markers aren't represented
+    # for undetected markers, assign dist index to equal FAILURE_RATE --- WRONG According to Pseudocode
+    # SHOULD ONLY RETURN MARKER PAIRS
+    if(len(particle_markers) > len(robot_markers)):
+        #Add spurious prob to final list
+        # add the shortest distance markers until all of the particle markers have been assigned a robot marker.
+        while len(selected_pairs) != len(particle_markers):
+            marker_pair = heapq.heappop(marker_q)
+            if(marker_pair[1][0] not in selected_pairs):
+                final_marker_list.append(marker_pair)
+                selected_pairs.add(marker_pair[1][0])
+    #TODO: I MAY NOT NEED TO COMPARE THE LENGTH OF LISTS -- I PROBABLY SHOULDN'T
+    # pop from prioirty queue while each of the particle markers aren't represented
+    if(len(particle_markers) < len(robot_markers)):
+        #Add spurious prob to final list
+        # add the shortest distance markers until all of the particle markers have been assigned a robot marker.
+        while len(selected_pairs) != len(robot_markers):
+            marker_pair = heapq.heappop(marker_q)
+            if(marker_pair[1][0] not in selected_pairs):
+                final_marker_list.append(marker_pair)
+                selected_pairs.add(marker_pair[1][0])
+    return final_marker_list
 
 
 
