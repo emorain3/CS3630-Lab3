@@ -7,6 +7,7 @@ import heapq
 from numpy.random import choice
 
 
+# Payton Jonson, Ecclesia Morain
 def motion_update(particles, odom):
     """ Particle filter motion update
 
