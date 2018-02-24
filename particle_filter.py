@@ -135,7 +135,7 @@ def get_marker_pairs(particle_markers, robot_markers):
 
     # pop from priority queue while each of the particle markers aren't represented
 
-    while len(selected_pairs) != len(particle_markers) or not marker_q.empty():
+    while not marker_q.empty():
         marker_pair = marker_q.get()
         if(marker_pair[1][0] not in selected_pairs):
             final_marker_list.append(marker_pair)
