@@ -102,18 +102,18 @@ def measurement_update(particles, measured_marker_list, grid):
         prob *= max(prob_match, prob_not_match)
 
         # Account for "hallucinated" particles
-        if (len(particle_markers_list) < len(measured_marker_list)):
+        if len(particle_markers_list) < len(measured_marker_list):
             for x in range(len(measured_marker_list) - len(particle_markers_list)):
                 prob *= SPURIOUS_DETECTION_RATE
-        elif(len(particle_markers_list) > len(measured_marker_list)):
+        elif len(particle_markers_list) > len(measured_marker_list):
             for x in range(len(particle_markers_list) - len(measured_marker_list)):
                 prob *= DETECTION_FAILURE_RATE
 
         particle_accuracies.append(prob)
 
     # Probability list normalization step
-    sum = np.sum(particle_accuracies)
-    particle_accuracies = np.divide(particle_accuracies, sum)
+    # prob_sum = np.sum(particle_accuracies)
+    # particle_accuracies = np.divide(particle_accuracies, prob_sum)
     measured_particles = choice(particles, len(particles), p=particle_accuracies)
 
     return measured_particles
@@ -131,13 +131,12 @@ def get_marker_pairs(particle_markers, robot_markers):
     for p_marker in particle_markers:
         for r_marker in robot_markers:
             dist = grid_distance(p_marker[0], p_marker[1], r_marker[0], r_marker[1])
-            marker_q.put(dist, (p_marker, r_marker))
+            marker_q.put((dist, (p_marker, r_marker)))
 
     # pop from priority queue while each of the particle markers aren't represented
 
     while len(selected_pairs) != len(particle_markers) or not marker_q.empty():
         marker_pair = marker_q.get()
-        print("marker pair is:", marker_pair)
         if(marker_pair[1][0] not in selected_pairs):
             final_marker_list.append(marker_pair)
             selected_pairs.add(marker_pair[1][0])
