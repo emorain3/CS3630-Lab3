@@ -112,8 +112,8 @@ def measurement_update(particles, measured_marker_list, grid):
         particle_accuracies.append(prob)
 
     # Probability list normalization step
-    # prob_sum = np.sum(particle_accuracies)
-    # particle_accuracies = np.divide(particle_accuracies, prob_sum)
+    prob_sum = np.sum(particle_accuracies)
+    particle_accuracies = np.divide(particle_accuracies, prob_sum)
     measured_particles = choice(particles, len(particles), p=particle_accuracies)
 
     return measured_particles
