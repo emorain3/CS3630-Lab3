@@ -3,7 +3,7 @@ from particle import Particle
 from utils import *
 from setting import *
 import numpy as np
-import heapq
+import queue
 from numpy.random import choice
 
 
@@ -67,7 +67,7 @@ def measurement_update(particles, measured_marker_list, grid):
 
     # TODO: Resample particle distribution if all probabilities are too low
     # TODO: Integrate random seed in sample method--- how to do this??? Where?
-    # TODO: prevent sampling bias when no change -- but how to determine change in sensor info?
+
 
     measured_particles = []
     particle_accuracies = []
@@ -84,6 +84,8 @@ def measurement_update(particles, measured_marker_list, grid):
         particle_markers_list = particle.read_markers(grid)
         marker_pairs = get_marker_pairs(particle_markers_list, measured_marker_list)
         prob = 1.0
+        prob_match = 0
+        prob_not_match = 0
 
         angle_diff = 0
 
@@ -124,34 +126,22 @@ def get_marker_pairs(particle_markers, robot_markers):
     # returns a marker list in the form [(distance, (observed particle marker, corresponding observed robot marker))]
     selected_pairs = set()
     final_marker_list = []
-    marker_q = []
+    marker_q = queue.PriorityQueue()
     #Push all markers distances onto prioirity queue
     for p_marker in particle_markers:
         for r_marker in robot_markers:
             dist = grid_distance(p_marker[0], p_marker[1], r_marker[0], r_marker[1])
-            heapq.heappush(marker_q, (dist, (p_marker, r_marker)))
+            marker_q.put(dist, (p_marker, r_marker))
 
-    # pop from prioirty queue while each of the particle markers aren't represented
-    # for undetected markers, assign dist index to equal FAILURE_RATE --- WRONG According to Pseudocode
-    # SHOULD ONLY RETURN MARKER PAIRS
-    if(len(particle_markers) > len(robot_markers)):
-        #Add spurious prob to final list
-        # add the shortest distance markers until all of the particle markers have been assigned a robot marker.
-        while len(selected_pairs) != len(particle_markers):
-            marker_pair = heapq.heappop(marker_q)
-            if(marker_pair[1][0] not in selected_pairs):
-                final_marker_list.append(marker_pair)
-                selected_pairs.add(marker_pair[1][0])
-    #TODO: I MAY NOT NEED TO COMPARE THE LENGTH OF LISTS -- I PROBABLY SHOULDN'T
-    # pop from prioirty queue while each of the particle markers aren't represented
-    if(len(particle_markers) < len(robot_markers)):
-        #Add spurious prob to final list
-        # add the shortest distance markers until all of the particle markers have been assigned a robot marker.
-        while len(selected_pairs) != len(robot_markers):
-            marker_pair = heapq.heappop(marker_q)
-            if(marker_pair[1][0] not in selected_pairs):
-                final_marker_list.append(marker_pair)
-                selected_pairs.add(marker_pair[1][0])
+    # pop from priority queue while each of the particle markers aren't represented
+
+    while len(selected_pairs) != len(particle_markers) or not marker_q.empty():
+        marker_pair = marker_q.get()
+        print("marker pair is:", marker_pair)
+        if(marker_pair[1][0] not in selected_pairs):
+            final_marker_list.append(marker_pair)
+            selected_pairs.add(marker_pair[1][0])
+
     return final_marker_list
 
 
