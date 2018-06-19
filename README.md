@@ -1,3 +1,5 @@
+##Project Description
+### Complete the motion_Update() and measurement_update() functions to develop a particle filter that will ~accurately~ predict the robot's current location. 
 
 ## Updates
 
